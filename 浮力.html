@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浮力大作战 · 双组PK</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(145deg, #0b2b4f, #1b4f7a);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+    padding: 16px;
+  }
+  .wrap {
+    max-width: 960px; width: 100%;
+    background: rgba(255,255,255,0.12);
+    border-radius: 40px; padding: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .panel {
+    background: #f8fcff; border-radius: 32px; padding: 24px;
+    box-shadow: inset 0 6px 12px rgba(0,30,60,0.08), 0 12px 24px rgba(0,0,0,0.3);
+    color: #0a2a44;
+  }
+  .hidden { display: none !important; }
+
+  /* 开始界面 */
+  .start { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+  .start h1 {
+    font-size: 2.6rem; font-weight: 800;
+    background: linear-gradient(135deg, #003b6b, #0e6b9e);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: 2px; text-shadow: 3px 3px 0 rgba(255,255,255,0.6);
+  }
+  .start p { font-size: 1.1rem; color: #2a4b6e; }
+  .btn-group { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  .btn {
+    background: #ffd966; border: none; padding: 16px 32px; border-radius: 60px;
+    font-size: 1.3rem; font-weight: 700; color: #1e3b5a;
+    box-shadow: 0 6px 0 #b38f40, 0 10px 20px rgba(0,0,0,0.2);
+    cursor: pointer; transition: all 0.08s ease; letter-spacing: 1px;
+  }
+  .btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #b38f40; }
+
+  /* 对战界面 */
+  .battle { display: flex; flex-direction: column; gap: 16px; }
+  .score-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #dae9f5; border-radius: 80px; padding: 8px 20px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.05), 0 6px 12px rgba(0,0,0,0.15);
+  }
+  .team {
+    display: flex; align-items: center; gap: 14px; padding: 6px 18px;
+    border-radius: 60px; font-weight: 700; font-size: 1.4rem; transition: 0.2s;
+  }
+  .team.active {
+    background: #ffb347; color: #1e2f3f;
+    box-shadow: 0 0 0 4px #fff5d0, 0 0 0 8px rgba(255,179,71,0.5);
+    transform: scale(1.02);
+  }
+  .team .score {
+    background: #fff; padding: 6px 18px; border-radius: 40px;
+    color: #0a2a44; font-size: 1.8rem; min-width: 70px; text-align: center;
+  }
+  .vs { font-size: 1.6rem; font-weight: 900; color: #8b6b3c; text-shadow: 0 2px 0 #ffeaa6; }
+  .timer-bar {
+    background: #1f3f5e; border-radius: 40px; padding: 6px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: #e0f0ff; font-weight: 600; font-size: 1.1rem;
+  }
+  .timer-bar .time {
+    background: #ecf9ff; color: #003b6b; padding: 4px 20px; border-radius: 40px;
+    font-size: 1.8rem; font-family: monospace; font-weight: 800; letter-spacing: 2px;
+  }
+  .q-box {
+    background: #fff; border-radius: 28px; padding: 22px 26px;
+    box-shadow: 0 10px 0 #b8cedf, 0 14px 24px rgba(0,0,0,0.18);
+  }
+  .q-text { font-size: 1.5rem; font-weight: 600; line-height: 1.5; color: #0e2c44; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .opt {
+    background: #edf6fe; border: 2px solid #b0cde0; border-radius: 26px;
+    padding: 14px 12px; font-size: 1.15rem; font-weight: 600; color: #1d3e5e;
+    text-align: left; cursor: pointer; transition: all 0.12s;
+    box-shadow: 0 4px 0 #b0cde0;
+  }
+  .opt:hover:not(:disabled) { background: #d9eaff; border-color: #7aa5c4; }
+  .opt:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 #b0cde0; }
+  .opt:disabled { opacity: 0.7; cursor: not-allowed; }
+  .opt.correct { background: #b6e6c9; border-color: #2f9e5a; box-shadow: 0 4px 0 #1b7a40; }
+  .opt.wrong { background: #f9c6c6; border-color: #c0392b; box-shadow: 0 4px 0 #8e2a20; }
+
+  .feedback {
+    min-height: 80px; margin-top: 8px; padding: 14px;
+    border-radius: 24px; background: #eef6fe; text-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .praise { color: #1f7a3b; font-size: 1.5rem; font-weight: 700; }
+  .penalty {
+    color: #b13e2b; font-size: 1.5rem; font-weight: 700;
+    background: #fff1e0; padding: 10px 22px; border-radius: 50px;
+    box-shadow: 0 4px 0 #e0b090;
+  }
+  .explain {
+    color: #2a577b; font-size: 1rem; background: #ffffffc0;
+    padding: 8px 16px; border-radius: 20px;
+  }
+  .tip { color: #5588aa; font-size: 1.1rem; }
+
+  .actions { display: flex; gap: 14px; justify-content: center; }
+  .small-btn {
+    background: #dbe9f5; border: none; padding: 10px 24px; border-radius: 40px;
+    font-size: 1rem; font-weight: 600; color: #1b3e5e;
+    box-shadow: 0 4px 0 #a2bbd0; cursor: pointer; transition: 0.08s;
+  }
+  .small-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 #a2bbd0; }
+  .small-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .progress { text-align: center; font-weight: 600; color: #2a577b; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <!-- 开始界面 -->
+    <div id="startScreen" class="start">
+      <h1>⚡ 浮力大作战 ⚡</h1>
+      <p>两组PK · 轮流作答 · 每题10秒 · 共10题</p>
+      <div class="btn-group">
+        <button class="btn" data-lecture="2">📘 第2讲 · 浮力与阿基米德</button>
+        <button class="btn" data-lecture="3">📗 第3讲 · 浮沉条件及应用</button>
+      </div>
+      <p style="font-size:0.95rem;color:#4e6e8a;">每组轮流答5题，答对得1分，答错或超时有惊喜惩罚~</p>
+    </div>
+
+    <!-- 对战界面 -->
+    <div id="battleScreen" class="battle hidden">
+      <div class="score-row">
+        <div id="teamA" class="team active">
+          <span>🔵 A组</span><span class="score" id="scoreA">0</span>
+        </div>
+        <div class="vs">VS</div>
+        <div id="teamB" class="team">
+          <span>🔴 B组</span><span class="score" id="scoreB">0</span>
+        </div>
+      </div>
+
+      <div class="timer-bar">
+        <span>⏳ 倒计时</span>
+        <span class="time" id="timerDisplay">10</span>
+        <span>秒</span>
+      </div>
+
+      <div class="progress" id="progressText">第 1 / 10 题</div>
+
+      <div class="q-box">
+        <div class="q-text" id="questionText">加载中...</div>
+        <div class="opts" id="optionsContainer"></div>
+      </div>
+
+      <div class="feedback" id="feedbackArea">
+        <span class="tip">👆 选择答案，开启挑战</span>
+      </div>
+
+      <div class="actions">
+        <button class="small-btn" id="nextBtn" disabled>▶ 下一题</button>
+        <button class="small-btn" id="restartBtn">⟲ 重新开始</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ======== 题库：第2讲（18题） ========
+  var Q2 = [
+    { q: "浸在液体中的物体受到浮力的方向总是？", o: ["竖直向上","竖直向下","水平方向","斜向上"], a: 0, e: "浮力的方向总是竖直向上的。" },
+    { q: "浮力产生的原因是？", o: ["液体对物体上表面的压力","液体对物体下表面的压力","上下表面受到的压力差","物体自身的重力"], a: 2, e: "浮力由上下表面压力差产生，F浮 = F向上 - F向下。" },
+    { q: "关于阿基米德原理，以下说法正确的是？", o: ["浮力大小等于物体排开液体所受的重力","浮力大小等于物体自身的重力","浮力大小等于物体的体积","浮力大小等于液体的重力"], a: 0, e: "阿基米德原理：浮力大小等于物体排开的液体所受的重力。" },
+    { q: "物体浸在液体中的体积越大、液体的密度越大，浮力就？", o: ["越小","越大","不变","无法判断"], a: 1, e: "浸在液体中的体积越大、液体密度越大，浮力就越大。" },
+    { q: "弹簧测力计测得物体重力2.2N，浸没水中示数2N，浮力是？", o: ["0.2N","2N","2.2N","0N"], a: 0, e: "F浮 = G - F示 = 2.2N - 2N = 0.2N。" },
+    { q: "以下哪种情况物体不受浮力？", o: ["漂浮在水面的木块","浸没在水中的铁块","紧贴容器底部的桥墩","空气中的热气球"], a: 2, e: "下表面与容器紧密接触（如桥墩），下表面没有液体，不受向上的压力，因此不受浮力。" },
+    { q: "将物体浸没在水中不同深度处，它受到的浮力？", o: ["深度越深浮力越大","深度越浅浮力越大","浮力大小不变","无法确定"], a: 2, e: "浸没后V排不变，液体密度不变，浮力大小不变，与深度无关。" },
+    { q: "浮力的施力物体是？", o: ["物体本身","液体或气体","容器底部","地球"], a: 1, e: "浮力的施力物体是液体或气体，受力物体是浸入液体或气体中的物体。" },
+    { q: "浸在液体中的物体，若下表面受到向上的压力为5N，上表面受到向下的压力为1N，则浮力为？", o: ["1N","5N","4N","6N"], a: 2, e: "F浮 = F向上 - F向下 = 5N - 1N = 4N。" },
+    { q: "实验探究浮力大小的影响因素时，采用的主要实验方法是？", o: ["控制变量法","理想实验法","等效替代法","类比法"], a: 0, e: "探究浮力大小与多个因素的关系时，采用控制变量法。" },
+    { q: "用弹簧测力计测浮力时，物体浸没前，测力计示数随浸入体积增大而？", o: ["变大","变小","不变","先变大后变小"], a: 1, e: "浸入体积越大，浮力越大，测力计示数 = G - F浮，所以示数变小。" },
+    { q: "以下关于阿基米德原理表达式正确的是？", o: ["F浮 = G物","F浮 = G排","F浮 = ρ物gV物","F浮 = ρ液gV物"], a: 1, e: "阿基米德原理：F浮 = G排 = ρ液gV排。当物体完全浸没时，V排 = V物。" },
+    { q: "将物体一半浸入水中时受到的浮力为3N，则完全浸没时受到的浮力为？", o: ["3N","6N","1.5N","无法确定"], a: 1, e: "完全浸没时V排变为原来的2倍，浮力也变为2倍，即6N。" },
+    { q: "浸在液体中的物体，若只有一部分浸入液体，则F浮与F向上的关系是？", o: ["F浮 = F向上","F浮 > F向上","F浮 < F向上","F浮 = 0"], a: 0, e: "物体只有一部分浸入时，上方无液体，F向下=0，所以F浮 = F向上。" },
+    { q: "潜水员从水面下潜过程中（完全浸没前），受到的浮力？", o: ["逐渐变大","逐渐变小","保持不变","先变大后变小"], a: 0, e: "完全浸没前，下潜过程中排开水的体积增大，浮力逐渐变大。" },
+    { q: "关于浮力，以下说法正确的是？", o: ["只有液体才产生浮力","只有气体才产生浮力","液体和气体都能产生浮力","浮力只与物体重力有关"], a: 2, e: "浸在液体或气体中的物体都会受到浮力，阿基米德原理适用于液体和气体。" },
+    { q: "两个体积相同的物体浸没在同种液体中，它们受到的浮力？", o: ["密度大的浮力大","重力大的浮力大","浮力一样大","无法比较"], a: 2, e: "浮力只与液体密度和排开液体的体积有关，与物体密度、重力无关。" },
+    { q: "探究浮力与液体密度的关系时，应控制哪个物理量不变？", o: ["液体密度","排开液体的体积","物体重力","液体深度"], a: 1, e: "根据控制变量法，探究浮力与液体密度的关系时，应控制排开液体的体积不变。" }
+  ];
+
+  // ======== 题库：第3讲（18题） ========
+  var Q3 = [
+    { q: "物体漂浮在液面上时，它受到的浮力与重力的关系是？", o: ["F浮 > G","F浮 = G","F浮 < G","无法确定"], a: 1, e: "漂浮时物体处于平衡状态，浮力等于重力。" },
+    { q: "一个实心小球放入水中后下沉，则小球的密度与水的密度关系是？", o: ["ρ球 > ρ水","ρ球 = ρ水","ρ球 < ρ水","无法判断"], a: 0, e: "下沉说明物体密度大于液体密度。" },
+    { q: "潜水艇实现上浮和下沉，主要是通过什么方式？", o: ["改变自身重力","改变浮力","改变液体密度","改变体积"], a: 0, e: "潜水艇浸没时浮力不变，通过充水或排水改变自身重力实现浮沉。" },
+    { q: "轮船从长江驶入大海，船体受到的浮力会？", o: ["变大","变小","不变","无法确定"], a: 2, e: "轮船始终漂浮，浮力等于重力，重力不变，浮力不变。" },
+    { q: "密度计在不同液体中漂浮时，受到的浮力？", o: ["在密度大的液体中浮力大","在密度小的液体中浮力大","浮力都相同","无法判断"], a: 2, e: "密度计漂浮时浮力等于重力，同一支密度计重力不变，浮力都相同。" },
+    { q: "把重0.4N、体积2.7×10⁻⁵m³的球浸没水中，放手后球将？", o: ["上浮","下沉","悬浮","静止"], a: 1, e: "F浮 = ρ水gV = 0.27N < G = 0.4N，球下沉。" },
+    { q: "热气球上升的主要原理是？", o: ["热空气密度小于外部空气，浮力大于重力","热空气密度大于外部空气，重力大于浮力","气球体积变大浮力变小","内部气体被抽走"], a: 0, e: "热空气受热膨胀密度变小，浮力大于重力，所以上升。" },
+    { q: "物体悬浮在液体中时，下列关系正确的是？", o: ["ρ物 > ρ液","ρ物 = ρ液","ρ物 < ρ液","F浮 < G"], a: 1, e: "悬浮时，物体密度等于液体密度，浮力等于重力。" },
+    { q: "物体沉底时，它受到的浮力与重力的关系是？", o: ["F浮 = G","F浮 > G","F浮 < G","F浮 = 0"], a: 2, e: "沉底时，浮力小于重力，F浮 < G。" },
+    { q: "同一支密度计分别放入甲、乙两种液体中，在甲液体中浸入较浅，则？", o: ["甲液体密度大","乙液体密度大","两液体密度相同","无法判断"], a: 0, e: "密度计浸入越浅，说明液体密度越大。" },
+    { q: "把一个鸡蛋放入清水中下沉，不断加盐搅拌后鸡蛋上浮，说明？", o: ["鸡蛋重力变小了","液体密度变大了","鸡蛋体积变大了","浮力变小了"], a: 1, e: "加盐后液体密度变大，浮力增大，当F浮 > G时鸡蛋上浮。" },
+    { q: "一艘轮船从河里驶入海里，它排开液体的体积？", o: ["变大","变小","不变","无法确定"], a: 1, e: "浮力不变，海水密度大于河水，由V排 = F浮/(ρ液g)可知V排变小。" },
+    { q: "潜水艇从水面下潜到水下更深处（保持浸没），受到的浮力？", o: ["变大","变小","不变","无法确定"], a: 2, e: "浸没后V排不变，液体密度不变，浮力不变。" },
+    { q: "体积相同的A、B、C三球放入水中静止，A漂浮、B悬浮、C沉底，受到的浮力关系？", o: ["FA > FB > FC","FA < FB = FC","FA = FB = FC","FA < FB < FC"], a: 1, e: "A漂浮V排最小，B、C浸没V排相等，所以FA < FB = FC。" },
+    { q: "质量相等的实心铁球和铝球放入水中，静止时受到的浮力？", o: ["铁球大","铝球大","一样大","无法判断"], a: 1, e: "两球都沉底，铝球密度小体积大，V排大，浮力大。" },
+    { q: "物体的浮沉条件中，当ρ液 > ρ物时，物体将？", o: ["上浮","下沉","悬浮","沉底"], a: 0, e: "ρ液 > ρ物时物体上浮，最终漂浮。" },
+    { q: "用同一密度计测不同液体密度，密度计露出液面越多，说明液体密度？", o: ["越大","越小","不变","无法判断"], a: 0, e: "密度计露出越多，浸入越少，由F浮 = ρ液gV排可知，F浮不变时V排越小ρ液越大。" },
+    { q: "把重为5N、体积为0.6dm³的物体浸没在水中，放手后物体将？", o: ["上浮","下沉","悬浮","无法判断"], a: 0, e: "F浮 = ρ水gV = 1×10³×10×0.6×10⁻³ = 6N > 5N，物体上浮。" }
+  ];
+
+  // ======== 状态 ========
+  var state = {
+    questions: [],
+    index: 0,
+    team: 'A',
+    scoreA: 0,
+    scoreB: 0,
+    timeLeft: 10,
+    timerId: null,
+    answered: false,
+    gameOver: false,
+    totalQuestions: 10
+  };
+
+  // ======== DOM ========
+  var $ = function(id) { return document.getElementById(id); };
+  var startScreen = $('startScreen');
+  var battleScreen = $('battleScreen');
+  var teamAEl = $('teamA'), teamBEl = $('teamB');
+  var scoreAEl = $('scoreA'), scoreBEl = $('scoreB');
+  var timerDisplay = $('timerDisplay');
+  var progressText = $('progressText');
+  var questionText = $('questionText');
+  var optionsContainer = $('optionsContainer');
+  var feedbackArea = $('feedbackArea');
+  var nextBtn = $('nextBtn');
+  var restartBtn = $('restartBtn');
+
+  // ======== 工具 ========
+  var penalties = [
+    "🎭 创意模仿：模仿一种动物叫声或动作",
+    "🎤 才艺展示：唱一句喜欢的歌",
+    "😜 搞怪表情：做一个夸张表情持续5秒",
+    "📘 亲吻物理书十秒（或深情对视）",
+    "🏋️ 三个蹲起",
+    "🕺 扭动身体跳两下",
+    "📢 大声说：我最爱物理！",
+    "🤸 单脚站立10秒",
+    "🎨 用身体摆出一个物理公式的形状"
+  ];
+  var praises = [
+    "🎉 太棒了！你就是物理小天才！",
+    "⭐ 完全正确！继续加油！",
+    "💪 厉害！浮力知识掌握得很扎实！",
+    "👏 漂亮！看来这讲内容你学透了！",
+    "🚀 正确！下一题也这么稳！",
+    "✨ 满分回答！为你点赞！",
+    "🏆 精彩！继续保持！"
+  ];
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function randPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function stopTimer() {
+    if (state.timerId !== null) {
+      clearInterval(state.timerId);
+      state.timerId = null;
+    }
+  }
+
+  function updateActiveTeam() {
+    if (state.team === 'A') {
+      teamAEl.classList.add('active');
+      teamBEl.classList.remove('active');
+    } else {
+      teamBEl.classList.add('active');
+      teamAEl.classList.remove('active');
+    }
+  }
+  function updateScores() {
+    scoreAEl.textContent = state.scoreA;
+    scoreBEl.textContent = state.scoreB;
+  }
+  function updateProgress() {
+    progressText.textContent = '第 ' + (state.index + 1) + ' / ' + state.totalQuestions + ' 题 · ' + (state.team === 'A' ? '🔵 A组作答' : '🔴 B组作答');
+  }
+
+  // ======== 游戏流程 ========
+  function startGame(lecture) {
+    var bank = (lecture === 2) ? Q2 : Q3;
+    var shuffled = shuffle(bank);
+    // 从题库中随机取10道（若题库不足10题则取全部）
+    state.questions = shuffled.slice(0, Math.min(10, shuffled.length));
+    state.totalQuestions = state.questions.length;
+    state.index = 0;
+    state.team = 'A';
+    state.scoreA = 0;
+    state.scoreB = 0;
+    state.answered = false;
+    state.gameOver = false;
+
+    updateScores();
+    updateActiveTeam();
+
+    startScreen.classList.add('hidden');
+    battleScreen.classList.remove('hidden');
+
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    stopTimer();
+    state.answered = false;
+    state.gameOver = false;
+    nextBtn.disabled = true;
+
+    var q = state.questions[state.index];
+    if (!q) { endGame(); return; }
+
+    updateProgress();
+    questionText.textContent = '第' + (state.index + 1) + '题：' + q.q;
+
+    var html = '';
+    for (var i = 0; i < q.o.length; i++) {
+      html += '<button class="opt" data-index="' + i + '">' + String.fromCharCode(65 + i) + '. ' + q.o[i] + '</button>';
+    }
+    optionsContainer.innerHTML = html;
+
+    feedbackArea.innerHTML = '<span class="tip">⏳ 快速作答，10秒倒计时！</span>';
+    startTimer();
+    updateActiveTeam();
+  }
+
+  function startTimer() {
+    state.timeLeft = 10;
+    timerDisplay.textContent = state.timeLeft;
+    state.timerId = setInterval(function() {
+      state.timeLeft--;
+      timerDisplay.textContent = state.timeLeft;
+      if (state.timeLeft <= 0) {
+        stopTimer();
+        if (!state.answered && !state.gameOver) onTimeout();
+      }
+    }, 1000);
+  }
+
+  function onTimeout() {
+    state.answered = true;
+    var q = state.questions[state.index];
+    if (!q) return;
+    disableAllOptions();
+    markCorrect(q.a);
+
+    var penalty = randPick(penalties);
+    feedbackArea.innerHTML =
+      '<div class="penalty">⏰ 超时！惩罚：' + penalty + '</div>' +
+      '<div class="explain">✅ 正确答案：' + q.o[q.a] + '<br>' + q.e + '</div>';
+
+    switchTeam();
+    nextBtn.disabled = false;
+  }
+
+  function onAnswer(selectedIdx) {
+    if (state.answered || state.gameOver) return;
+    state.answered = true;
+    stopTimer();
+
+    var q = state.questions[state.index];
+    if (!q) return;
+    disableAllOptions();
+    markCorrect(q.a);
+
+    var correct = (selectedIdx === q.a);
+    if (!correct) markWrong(selectedIdx);
+
+    if (correct) {
+      if (state.team === 'A') state.scoreA++; else state.scoreB++;
+      updateScores();
+      var praise = randPick(praises);
+      feedbackArea.innerHTML =
+        '<div class="praise">' + praise + '</div>' +
+        '<div class="explain">✅ 正确答案：' + q.o[q.a] + '<br>' + q.e + '</div>';
+    } else {
+      var penalty = randPick(penalties);
+      feedbackArea.innerHTML =
+        '<div class="penalty">💥 答错！惩罚：' + penalty + '</div>' +
+        '<div class="explain">✅ 正确答案：' + q.o[q.a] + '<br>' + q.e + '</div>';
+    }
+
+    switchTeam();
+    nextBtn.disabled = false;
+  }
+
+  function disableAllOptions() {
+    var btns = optionsContainer.querySelectorAll('.opt');
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+  }
+  function markCorrect(idx) {
+    var btns = optionsContainer.querySelectorAll('.opt');
+    if (btns[idx]) btns[idx].classList.add('correct');
+  }
+  function markWrong(idx) {
+    var btns = optionsContainer.querySelectorAll('.opt');
+    if (btns[idx]) btns[idx].classList.add('wrong');
+  }
+  function switchTeam() {
+    state.team = (state.team === 'A') ? 'B' : 'A';
+    updateActiveTeam();
+  }
+
+  function nextQuestion() {
+    if (state.gameOver) return;
+    stopTimer();
+    state.index++;
+    if (state.index < state.questions.length) {
+      loadQuestion();
+    } else {
+      endGame();
+    }
+  }
+
+  function endGame() {
+    state.gameOver = true;
+    state.answered = true;
+    stopTimer();
+    questionText.textContent = '🎉 全部 ' + state.totalQuestions + ' 题已答完！';
+    optionsContainer.innerHTML = '';
+    progressText.textContent = '比赛结束';
+
+    var result;
+    if (state.scoreA > state.scoreB) result = '🏆 A组获胜！比分 ' + state.scoreA + ' : ' + state.scoreB;
+    else if (state.scoreB > state.scoreA) result = '🏆 B组获胜！比分 ' + state.scoreA + ' : ' + state.scoreB;
+    else result = '🤝 平局！比分 ' + state.scoreA + ' : ' + state.scoreB;
+
+    feedbackArea.innerHTML = '<span class="praise">' + result + '</span>';
+    nextBtn.disabled = true;
+  }
+
+  function resetToStart() {
+    stopTimer();
+    state.questions = [];
+    state.index = 0;
+    state.team = 'A';
+    state.scoreA = 0;
+    state.scoreB = 0;
+    state.answered = false;
+    state.gameOver = false;
+    updateScores();
+    updateActiveTeam();
+    nextBtn.disabled = true;
+    timerDisplay.textContent = '10';
+    progressText.textContent = '第 1 / 10 题';
+    questionText.textContent = '加载中...';
+    optionsContainer.innerHTML = '';
+    feedbackArea.innerHTML = '<span class="tip">👆 选择答案，开启挑战</span>';
+    startScreen.classList.remove('hidden');
+    battleScreen.classList.add('hidden');
+  }
+
+  // ======== 事件绑定 ========
+  var startBtns = document.querySelectorAll('[data-lecture]');
+  for (var i = 0; i < startBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener('click', function() {
+        var lec = parseInt(btn.getAttribute('data-lecture'), 10);
+        startGame(lec);
+      });
+    })(startBtns[i]);
+  }
+
+  // 选项事件委托（只绑一次）
+  optionsContainer.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target.classList.contains('opt')) return;
+    if (target.disabled) return;
+    var idx = parseInt(target.getAttribute('data-index'), 10);
+    onAnswer(idx);
+  });
+
+  nextBtn.addEventListener('click', nextQuestion);
+  restartBtn.addEventListener('click', resetToStart);
+
+  // 初始化
+  resetToStart();
+})();
+</script>
+</body>
+</html>
